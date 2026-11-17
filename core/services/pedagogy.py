@@ -1,5 +1,7 @@
-import os
 import json
+import re
+
+from .llm import ask
 
 PROMPT = """You are a primary-school teacher. Grade level: {grade}.
 Lesson text: {text}
@@ -9,21 +11,53 @@ Return ONLY valid JSON with these keys:
 "questions": a list of 3 short questions to check understanding,
 "story": a 4-5 sentence simple story that teaches the same idea."""
 
+MOCK = {
+    "simplified": None,  # filled with the original text in mock mode
+    "questions": ["Question 1?", "Question 2?", "Question 3?"],
+    "story": "This is a mock story.",
+}
+
+
+def _parse_json(raw):
+    """Parse model output as JSON, tolerating ```json fences and extra text."""
+    raw = raw.strip()
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.I)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", raw, re.S)
+        if match:
+            return json.loads(match.group(0))
+        raise
+
 
 def generate(text, grade=2):
-    # Mock mode: runs without an API key so we can test the app first
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return {
-            "simplified": text,
-            "questions": ["Question 1?", "Question 2?", "Question 3?"],
-            "story": "This is a mock story.",
-        }
+    raw = ask(PROMPT.format(grade=grade, text=text))
 
-    import anthropic
-    client = anthropic.Anthropic()
-    msg = client.messages.create(
-        model="claude-sonnet-5-5",
-        max_tokens=1000,
-        messages=[{"role": "user", "content": PROMPT.format(grade=grade, text=text)}],
-    )
-    return json.loads(msg.content[0].text)
+    # No GEMINI_API_KEY set: mock mode so the app still runs
+    if raw is None:
+        return {**MOCK, "simplified": text}
+
+    data = _parse_json(raw)
+    return {
+        "simplified": data.get("simplified", text),
+        "questions": data.get("questions", [])[:3],
+        "story": data.get("story", ""),
+    }
+
+def generate_translated(text, target, grade=2):
+    """Simplify a lesson, then translate everything into the target language."""
+    from .translate import translate_many
+
+    data = generate(text, grade)
+    questions = data["questions"]
+
+    # One call: [simplified, q1, q2, q3, story]
+    parts = [data["simplified"], *questions, data["story"]]
+    translated = translate_many(parts, target)
+
+    return {
+        "simplified": translated[0],
+        "questions": translated[1:1 + len(questions)],
+        "story": translated[-1],
+    }

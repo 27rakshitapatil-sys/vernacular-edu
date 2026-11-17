@@ -4,7 +4,7 @@
 <body style="font-family:sans-serif;max-width:700px;margin:30px auto;padding:0 16px">
   <h2>Mother Tongue Lesson Helper</h2>
 
-  <form method="post">
+  <form method="post" id="lesson-form">
     {% csrf_token %}
     <textarea name="text" rows="5" style="width:100%" placeholder="Paste lesson text in English"></textarea>
     <p>
@@ -15,22 +15,44 @@
         {% endfor %}
       </select>
       Grade: <input name="grade" type="number" value="2" min="1" max="5">
-      <button type="submit">Generate</button>
+      <button type="submit" id="go-btn">Generate</button>
     </p>
   </form>
 
-  {% if result %}
-    <h3>Lesson</h3>
-    <p id="lesson">{{ result.simplified }}</p>
-    <h3>Questions</h3>
-    <ol>{% for q in result.questions %}<li>{{ q }}</li>{% endfor %}</ol>
-    <h3>Story</h3>
-    <p>{{ result.story }}</p>
-    <button onclick="speak()">Read aloud</button>
+  <script>
+    // Show a waiting message and block double clicks while the server works
+    document.getElementById('lesson-form').addEventListener('submit', function () {
+      var btn = document.getElementById('go-btn');
+      btn.disabled = true;
+      btn.textContent = 'Please wait... ⏳ (this can take up to a minute)';
+    });
+    // If the user comes back with the Back button, reset the button
+    window.addEventListener('pageshow', function () {
+      var btn = document.getElementById('go-btn');
+      btn.disabled = false;
+      btn.textContent = 'Generate';
+    });
+  </script>
+
+    {% if result %}
+    <div id="result-text">
+      <h3>Lesson</h3>
+      <p id="lesson">{{ result.simplified }}</p>
+      <h3>Questions</h3>
+      <ol id="questions">{% for q in result.questions %}<li>{{ q }}</li>{% endfor %}</ol>
+      <h3>Story</h3>
+      <p id="story">{{ result.story }}</p>
+    </div>
+    <button onclick="speak('lesson')">🔊 Read lesson</button>
+    <button onclick="speak('questions')">🔊 Read questions</button>
+    <button onclick="speak('story')">🔊 Read story</button>
+    <button onclick="speechSynthesis.cancel()">⏹ Stop</button>
     <script>
-      function speak() {
-        const u = new SpeechSynthesisUtterance(document.getElementById('lesson').innerText);
+      function speak(id) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(document.getElementById(id).innerText);
         u.lang = "{{ result.speech_lang }}";
+        u.rate = 0.9;   // slightly slower, easier for children
         speechSynthesis.speak(u);
       }
     </script>
