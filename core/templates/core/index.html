@@ -34,7 +34,13 @@
     });
   </script>
 
-    {% if result %}
+  {% if error %}
+    <p style="background:#fde8e8;border:1px solid #e0a0a0;padding:10px;border-radius:6px">
+      {{ error }}
+    </p>
+  {% endif %}
+
+  {% if result %}
     <div id="result-text">
       <h3>Lesson</h3>
       <p id="lesson">{{ result.simplified }}</p>
