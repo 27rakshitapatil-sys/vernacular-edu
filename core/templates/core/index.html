@@ -1,20 +1,28 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>Lesson Helper</title></head>
+<head>
+  <meta charset="utf-8"><title>Lesson Helper</title>
+  <style>
+    @media print {
+      #lesson-form, button, .no-print { display: none !important; }
+      body { font-size: 18px; }
+    }
+  </style>
+</head>
 <body style="font-family:sans-serif;max-width:700px;margin:30px auto;padding:0 16px">
   <h2>Mother Tongue Lesson Helper</h2>
 
   <form method="post" id="lesson-form">
     {% csrf_token %}
-    <textarea name="text" rows="5" style="width:100%" placeholder="Paste lesson text in English"></textarea>
+    <textarea name="text" rows="5" style="width:100%" placeholder="Paste lesson text in English">{{ text }}</textarea>
     <p>
       Language:
       <select name="language">
         {% for code, info in languages.items %}
-          <option value="{{ code }}">{{ info.0 }}</option>
+          <option value="{{ code }}" {% if code == selected_lang %}selected{% endif %}>{{ info.0 }}</option>
         {% endfor %}
       </select>
-      Grade: <input name="grade" type="number" value="2" min="1" max="5">
+      Grade: <input name="grade" type="number" value="{{ grade|default:2 }}" min="1" max="5">
       <button type="submit" id="go-btn">Generate</button>
     </p>
   </form>
@@ -53,6 +61,7 @@
     <button onclick="speak('questions')">🔊 Read questions</button>
     <button onclick="speak('story')">🔊 Read story</button>
     <button onclick="speechSynthesis.cancel()">⏹ Stop</button>
+    <button onclick="window.print()">🖨 Print</button>
     <script>
       function speak(id) {
         speechSynthesis.cancel();
