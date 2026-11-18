@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Past Lessons</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; }
+    details { border: 1px solid #ccc; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+    summary { cursor: pointer; font-weight: bold; }
+    .meta { color: #666; font-size: 0.85em; font-weight: normal; }
+    pre { white-space: pre-wrap; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <h1>Past Lessons</h1>
+  <p><a href="/">&larr; Back to lesson helper</a></p>
+
+  {% for lesson in lessons %}
+    <details>
+      <summary>
+        {{ lesson.title }}
+        <span class="meta">({{ lesson.language }}, grade {{ lesson.grade }}, {{ lesson.created_at|date:"d M Y, H:i" }})</span>
+      </summary>
+      <h3>Lesson</h3>
+      <pre>{{ lesson.simplified_text }}</pre>
+      <h3>Questions</h3>
+      <pre>{{ lesson.questions }}</pre>
+      <h3>Story</h3>
+      <pre>{{ lesson.story }}</pre>
+    </details>
+  {% empty %}
+    <p>No saved lessons yet.</p>
+  {% endfor %}
+</body>
+</html>
